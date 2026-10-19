@@ -6,7 +6,7 @@ Maintained by the coding agent per `CLAUDE.md §15`. Newest entries first within
 
 | M | Status | Gate | Result |
 |---|---|---|---|
-| M0 | in progress | G0 | catnode05: env + upstream tests done (43 pass, 14 skip, 1 fail); throughput, runcpu, spark SDPA, upstream PR pending |
+| M0 | in progress | G0 | mini-05: env + upstream tests done (43 pass, 14 skip, 1 fail); throughput, runcpu, spark SDPA, upstream PR pending |
 | M1 | not started | G1 | — |
 | M2 | not started | G2 | — |
 | M3 | not started | G3 | — |
@@ -21,7 +21,9 @@ Maintained by the coding agent per `CLAUDE.md §15`. Newest entries first within
 
 ## Decisions
 
-- 2026-10-19 — M0 started on `catnode05` (M4 Mini, 24 GB). Scaffolded §3 layout (`comida/`, `ext/`, `bench/`, `export/`, `docs/`, `config/`). `uv.lock` rewrites from newer uv (revision 3→5) are reverted, not committed.
+- 2026-10-19 — **mini-05 (hostname catnode05.local) is the project master.** Cluster = mini-02/03/04, catalina, spark, athena (+ mini-05). Topology in `config/cluster.yaml` (aliases only); IPs/usernames only in `~/.ssh/config`, never in git. mini-04's `/Volumes/FastStorage` is off limits.
+
+- 2026-10-19 — M0 started on `mini-05` (M4 Mini, 24 GB). Scaffolded §3 layout (`comida/`, `ext/`, `bench/`, `export/`, `docs/`, `config/`). `uv.lock` rewrites from newer uv (revision 3→5) are reverted, not committed.
 - 2026-10-19 — Upstream sharp edge found: `tests/test_execution.py::test_memory_limit` fails on macOS because `nanochat/execution.py:50` skips RLIMIT on darwin but the test has no darwin skip. Candidate for the G0 upstream PR (branch from `upstream/master`).
 
 - 2026-10-19 — Project named `comidaGPT`; forked from karpathy/nanochat @ `92d63d4` (2026-07-03). Two tracks (N: from-scratch nanochat; Q: continued pretraining of a small open base). Local compute only. MIT.
@@ -42,8 +44,12 @@ Maintained by the coding agent per `CLAUDE.md §15`. Newest entries first within
 
 ## Pinned versions
 
-uv 0.13.1; torch 2.9.1 (cpu extra) on catnode05; Python 3.14.4 system / `.python-version` 3.10 for venv. Full pins: `uv.lock`.
+uv 0.13.1; torch 2.9.1 (cpu extra) on mini-05; Python 3.14.4 system / `.python-version` 3.10 for venv. Full pins: `uv.lock`.
 
 ## Open questions
+
+- 2026-10-19 — mini-01 (FVE's old master): include in comidaGPT? No address on file. CLAUDE.md says "Mac Minis ×4" but the FVE doc lists five (01-05).
+- 2026-10-19 — spark's `gpt-oss:120b` lives in a shared Ollama instance: is using it for teacher traces OK with its owner (rule 0.10)?
+- 2026-10-19 — Master's key is not yet installed on workers (`ssh-copy-id` needed, interactive).
 
 See `CLAUDE.md §16`. Answers recorded here with dates.

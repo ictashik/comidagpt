@@ -1,8 +1,17 @@
-# Machine topology (CLAUDE.md §8.3). Tracked in git, so it holds ONLY roles and SSH aliases.
-# IPs, usernames, ports and keys live in ~/.ssh/config (outside the repo).
-# Per-machine work dirs go in config/cluster.local.yaml (git-ignored).
+# Machine topology (CLAUDE.md §8.3). Tracked in git, so it holds ONLY roles, hardware and SSH aliases.
+# IPs, usernames and keys live in ~/.ssh/config (outside the repo). work_dir is relative to the remote $HOME.
+# Hardware/disk facts come from the FVE cluster doc (2026-09-04): re-verify before planning a run (rule 0.3).
+master: mini-05            # this machine (hostname catnode05.local); checkpoints and results rsync here
+
 machines:
-  catnode05: {ssh: localhost, role: mini-dev, runtime: cpu/mps}
-  catalina:  {ssh: catalina,  role: trainer,  runtime: cuda}   # L40S 46GB
-  spark:     {ssh: spark,     role: teacher,  runtime: cuda}   # GB10
-  athena:    {ssh: athena,    role: eval-sft, runtime: cuda}   # RTX 4080 16GB
+  mini-05:  {ssh: localhost, role: master,  runtime: cpu/mps, mem: 24GB,  work_dir: ~/comidagpt}
+  mini-02:  {ssh: mini-02,   role: worker,  runtime: cpu/mps, mem: 24GB,  work_dir: ~/comidagpt}
+  mini-03:  {ssh: mini-03,   role: worker,  runtime: cpu/mps, mem: 24GB,  work_dir: ~/comidagpt}
+  mini-04:  {ssh: mini-04,   role: worker,  runtime: cpu/mps, mem: 24GB,  work_dir: ~/comidagpt,
+             exclude_paths: [/Volumes/FastStorage],   # FORBIDDEN: never read/write/enumerate (rule 0.10)
+             note: "internal disk ~94% full; check headroom before copying anything"}
+  catalina: {ssh: catalina,  role: trainer, runtime: cuda,    gpu: L40S 46GB,       work_dir: ~/comidagpt,
+             note: "shared box; no sudo; no python3-venv, conda env was broken -> use uv-managed Python"}
+  spark:    {ssh: spark,     role: teacher, runtime: cuda,    gpu: GB10 121GB unified, arch: aarch64, work_dir: ~/comidagpt}
+  athena:   {ssh: athena,    role: eval-sft, runtime: cuda,   gpu: RTX 4080 16GB,   work_dir: ~/comidagpt}
+# mini-01 (FVE's old master) is not listed: no address in the FVE doc. Add it once confirmed.

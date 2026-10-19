@@ -22,3 +22,4 @@ wandb/
 
 # run logs (provenance goes in PROGRESS.md)
 logs/
+data/tasks/

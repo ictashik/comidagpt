@@ -42,6 +42,21 @@ Maintained by the coding agent per `CLAUDE.md §15`. Newest entries first within
 | A5 | Qwen3-0.6B/1.7B-Base is the Track Q base | §7 | open — decide at M4 |
 | A6 | SJRI can release a lab-measured Indian recipe set / dietitian reference subset | §1, §9 | open |
 
+## Cluster readiness (read-only check, 2026-10-19)
+
+Key auth to all six workers works (dedicated key `id_comidagpt`, master mini-05). Nothing installed or changed on them.
+
+| Machine | Load / sessions | Free disk | GPU | uv | Verdict |
+|---|---|---|---|---|---|
+| mini-01 | 1.3 / 5 users | **10 GB (95% used)** | - | no | too full for model/data work; needs cleanup first |
+| mini-02 | 0.9 / 0 | 126 GB | - | yes | ready |
+| mini-03 | 0.9 / 3 | 58 GB | - | yes | ready |
+| catalina | 1.0 (falling from 4) / 5 | 473 GB | L40S idle (15 MiB used, 0 %) | no | ready for the d12 throughput run |
+| spark | 1.1 / 4 | 3.2 TB | GB10 **94 % busy, 67 GB held by another user's process** | no | busy; do not launch here |
+| athena | 0.0 / 0 | 1.5 TB | **NVML driver/library mismatch** (library 595.99) | no | GPU unusable until driver reload/reboot (needs sudo: owner) |
+
+System Python is 3.9 on the Minis and 3.12 on the Linux boxes; `uv` manages the interpreter, so this is fine.
+
 ## Pinned versions
 
 uv 0.13.1; torch 2.9.1 (cpu extra) on mini-05; Python 3.14.4 system / `.python-version` 3.10 for venv. Full pins: `uv.lock`.

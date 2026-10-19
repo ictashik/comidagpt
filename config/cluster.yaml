@@ -1,6 +1,8 @@
-# Machine topology (CLAUDE.md §8.3). Fill in host/user/work_dir; do not commit secrets.
+# Machine topology (CLAUDE.md §8.3). Tracked in git, so it holds ONLY roles and SSH aliases.
+# IPs, usernames, ports and keys live in ~/.ssh/config (outside the repo).
+# Per-machine work dirs go in config/cluster.local.yaml (git-ignored).
 machines:
-  catnode05: {role: mini-dev, runtime: cpu/mps, host: localhost}
-  catalina:  {role: trainer,  runtime: cuda}   # L40S 46GB
-  spark:     {role: teacher,  runtime: cuda}   # GB10
-  athena:    {role: eval-sft, runtime: cuda}   # RTX 4080 16GB
+  catnode05: {ssh: localhost, role: mini-dev, runtime: cpu/mps}
+  catalina:  {ssh: catalina,  role: trainer,  runtime: cuda}   # L40S 46GB
+  spark:     {ssh: spark,     role: teacher,  runtime: cuda}   # GB10
+  athena:    {ssh: athena,    role: eval-sft, runtime: cuda}   # RTX 4080 16GB

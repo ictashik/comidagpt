@@ -5,8 +5,17 @@ dev-ignore/
 report.md
 eval_bundle/
 
-# Secrets
+# Secrets and machine-specific connection details (CLAUDE.md rule 0.8)
 .env
+.env.*
+*.pem
+*.key
+id_*
+*.local.yaml
+*.local.yml
+ssh_config*
+known_hosts*
+data/tables/
 
 # comida: CLAUDE.md is the project charter and is tracked (upstream ignores it)
 wandb/

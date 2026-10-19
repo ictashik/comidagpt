@@ -21,6 +21,10 @@ Maintained by the coding agent per `CLAUDE.md §15`. Newest entries first within
 
 ## Decisions
 
+- 2026-10-19 — **spark blocker 1 (upstream bug):** `nanochat/flash_attention.py` only special-cases `major == 9`; any other arch (here sm_121, major 12) asks the Hub for `kernels-community/flash-attn3`, `has_kernel` says yes, but the image has no sm_121 code, so the first attention call hard-aborts (`no kernel image is available`) instead of falling back to SDPA. `tests/test_attention_fallback.py` dies silently on spark. Proposed fix: only try FA3 when `major in (8, 9)` (matches the file's own comment). Not applied; candidate for the G0 upstream PR (stronger than the darwin test-skip).
+- 2026-10-19 — **spark blocker 2:** Inductor/Triton fails with the bundled ptxas on sm_121 (`NoTritonConfigsError`, 4 `test_optim` failures). Workaround verified: `TRITON_PTXAS_PATH=/usr/local/cuda-13/bin/ptxas` (system CUDA 13.0 present) -> `test_optim` 4/4 pass. Untested: a full `torch.compile`d training step.
+- 2026-10-19 — catalina: `uv sync --extra gpu --group dev` works without sudo; 58/58 upstream tests pass (L40S).
+
 - 2026-10-19 — **mini-05 (hostname catnode05.local) is the project master.** Cluster = mini-01/02/03, catalina, spark, athena (+ mini-05). mini-04 is on another assignment: excluded. Topology in `config/cluster.yaml` (aliases only); IPs/usernames only in `~/.ssh/config`, never in git. 
 
 - 2026-10-19 — M0 started on `mini-05` (M4 Mini, 24 GB). Scaffolded §3 layout (`comida/`, `ext/`, `bench/`, `export/`, `docs/`, `config/`). `uv.lock` rewrites from newer uv (revision 3→5) are reverted, not committed.
@@ -35,7 +39,7 @@ Maintained by the coding agent per `CLAUDE.md §15`. Newest entries first within
 
 | # | Assumption | Where | Status |
 |---|---|---|---|
-| A1 | PyTorch CUDA aarch64 wheels + nanochat SDPA fallback work on spark (GB10) | §8.1 | open |
+| A1 | PyTorch CUDA aarch64 wheels + nanochat SDPA fallback work on spark (GB10) | §8.1 | **partly verified 2026-10-19**: torch 2.9.1+cu128 sees GB10 (cc 12.1, outside torch's official 8.0-12.0), bf16 matmul OK, SDPA fwd/bwd OK when forced. Two blockers found, see Decisions |
 | A2 | BM25 over names+aliases gives recall@10 ≥ 0.95 for `search` | §5.1 | open |
 | A3 | IFCT 14-group names match ODT's | §5.1 | open |
 | A4 | IFCT 2017 is redistributable in verbalised form | §6.1 | open |
@@ -48,12 +52,12 @@ Key auth to all six workers works (dedicated key `id_comidagpt`, master mini-05)
 
 | Machine | Load / sessions | Free disk | GPU | uv | Verdict |
 |---|---|---|---|---|---|
-| mini-01 | 1.3 / 5 users | **10 GB (95% used)** | - | no | too full for model/data work; needs cleanup first |
+| mini-01 | 1.3 / 5 users | 49 GB after cleanup (was 10) | - | installed | ready (cpu extra not yet synced) |
 | mini-02 | 0.9 / 0 | 126 GB | - | yes | ready |
 | mini-03 | 0.9 / 3 | 58 GB | - | yes | ready |
 | catalina | 1.0 (falling from 4) / 5 | 473 GB | L40S idle (15 MiB used, 0 %) | no | ready for the d12 throughput run |
-| spark | 1.1 / 4 | 3.2 TB | GB10 **94 % busy, 67 GB held by another user's process** | no | busy; do not launch here |
-| athena | 0.0 / 0 | 1.5 TB | **NVML driver/library mismatch** (library 595.99) | no | GPU unusable until driver reload/reboot (needs sudo: owner) |
+| spark | 0.5 / 6 | 3.2 TB | GB10 idle after owner cleanup | installed | env built; see Decisions for 2 blockers |
+| athena | 0.0 / 0 | 1.5 TB | **NVML driver/library mismatch** (library 595.99) | installed | GPU unusable until reboot/driver reload (owner has sudo; commands given) |
 
 System Python is 3.9 on the Minis and 3.12 on the Linux boxes; `uv` manages the interpreter, so this is fine.
 

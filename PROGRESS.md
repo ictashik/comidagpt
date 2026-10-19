@@ -18,6 +18,8 @@ Maintained by the coding agent per `CLAUDE.md §15`. Newest entries first within
 
 | run_id | machine | git sha | config | data sha | start | end | result |
 |---|---|---|---|---|---|---|---|
+| g0-d12-catalina | catalina (L40S) | 154fde5 | d12, 60 it, dbs 32, `--run=dummy` | climbmix shards 0-7, tokenizer trained on 2B chars (no manifest yet) | 2026-10-19 | 2026-10-19 | log `~/comidagpt/logs/g0_d12_dbs32.log` on catalina; ~145k tok/s, 2.96 min |
+| g0-d12-athena | athena (RTX 4080) | 154fde5 | d12, 60 it, dbs 8 (16 OOM), `--run=dummy` | same | 2026-10-19 | 2026-10-19 | `~/comidagpt/logs/g0_d12_dbs8.log`; ~92.7k tok/s, 4.62 min |
 
 ## Decisions
 

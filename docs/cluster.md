@@ -10,14 +10,13 @@ a run. `config/cluster.yaml` is the machine-readable twin; keep them in sync.
 | Alias | Role in comidaGPT | Hardware | Free disk (FVE snapshot) |
 |---|---|---|---|
 | mini-05 | **master** (this machine): orchestration, data building, bench, checkpoint/result sink | M4, 24 GB | 94 GB |
-| mini-02, mini-03 | workers: data building, teacher traces (MLX), bench baselines | M4, 24 GB | 37 / 122 GB |
-| mini-04 | worker, same as above | M4, 24 GB | ~14 GB (tight) |
+| mini-01, mini-02, mini-03 | workers: data building, teacher traces (MLX), bench baselines | M4, 24 GB | mini-02 37 GB, mini-03 122 GB, mini-01 unknown |
 | catalina | Track N/Q primary trainer | L40S 46 GB, 503 GB host RAM | 193 GB |
 | spark | teacher traces, long low-priority runs | GB10, 121 GB unified, Ubuntu aarch64 | 3.2 TB |
 | athena | SFT/GRPO ≤1.7B, evals, export smoke tests | RTX 4080 16 GB, 62 GB host RAM | 1.5 TB |
 
-**mini-04 has an external drive at `/Volumes/FastStorage`. Never touch it** (read, write, mount, enumerate `/Volumes`).
-Any cluster-wide disk/mount scan must exclude mini-04 explicitly.
+**mini-04 is on another assignment and is not part of this project.** Do not connect to it. (It also has an external
+drive at `/Volumes/FastStorage` that must never be touched.)
 
 All machines are shared personal machines with other users' work on them (load 1-2 at idle is normal). Never
 `sudo`, never touch other users' Ollama instances or model stores, stay inside the work dir.
@@ -26,7 +25,7 @@ All machines are shared personal machines with other users' work on them (load 1
 
 - Master reaches workers by key auth through aliases in `~/.ssh/config` (`ssh catalina`, `rsync ... spark:~/comidagpt/`).
 - Install the master's public key once per machine with `ssh-copy-id <alias>` (interactive password, never scripted).
-- Verify: `for h in mini-02 mini-03 mini-04 catalina spark athena; do ssh -n -o BatchMode=yes -o ConnectTimeout=5 $h 'echo OK $(hostname)'; done`
+- Verify: `for h in mini-01 mini-02 mini-03 catalina spark athena; do ssh -n -o BatchMode=yes -o ConnectTimeout=5 $h 'echo OK $(hostname)'; done`
 - Use `ssh -n` for every ssh call inside a shell loop, or it eats the loop's stdin and silently stops after one host.
 - Non-interactive SSH on the Minis does not have `brew` on PATH; use full paths (`/opt/homebrew/bin/...`).
 - Orchestration is SSH + rsync, one process per machine, no Ray, no queue (CLAUDE.md §8.3). Checkpoints rsync to the master without `--delete`.

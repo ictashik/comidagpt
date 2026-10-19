@@ -27,7 +27,11 @@ def _load_flash_attention_3():
     try:
         major, _ = torch.cuda.get_device_capability()
         # FA3 kernels are currently compiled for Hopper (sm90), Ada (sm89) and Ampere (sm80/sm86)
-        # Blackwell (sm100) needs SDPA fallback until FA3 is recompiled or FA4 is released
+        # Blackwell (sm100, sm120, sm121 e.g. GB10) needs SDPA fallback until FA3 is recompiled or FA4 is released.
+        # Don't ask the hub: has_kernel() can say yes for a build that has no image for this device,
+        # which aborts the process on the first attention call instead of falling back.
+        if major not in (8, 9):
+            return None
         import os
         os.environ["HF_HUB_DISABLE_PROGRESS_BARS"] = "1"
         from kernels import get_kernel, has_kernel

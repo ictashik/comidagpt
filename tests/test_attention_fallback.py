@@ -13,6 +13,8 @@ Note on test structure:
     2. TestSDPAOnly: Tests that only exercise the SDPA fallback path. These can run
        on any device (CUDA, CPU, MPS) with the appropriate dtype for that device.
 """
+import sys
+import types
 import torch
 import pytest
 import nanochat.flash_attention as fa_module
@@ -357,6 +359,17 @@ class TestOverrideMechanism:
         """Test that override=None uses auto-detection."""
         set_impl(None)
         assert fa_module.USE_FA3 == HAS_FA3
+
+
+@pytest.mark.parametrize("capability", [(10, 0), (12, 0), (12, 1)])
+def test_fa3_not_attempted_on_unsupported_arch(monkeypatch, capability):
+    """Blackwell (sm100/sm120/sm121) has no FA3 image: the loader must return None without asking the hub."""
+    monkeypatch.setattr(torch.cuda, "is_available", lambda: True)
+    monkeypatch.setattr(torch.cuda, "get_device_capability", lambda *a, **k: capability)
+    # a hub that claims a kernel exists for every device, as the real one does for a build lacking this arch's image
+    fake_kernels = types.SimpleNamespace(has_kernel=lambda name: True, get_kernel=lambda name: types.SimpleNamespace(flash_attn_interface=object()))
+    monkeypatch.setitem(sys.modules, "kernels", fake_kernels)
+    assert fa_module._load_flash_attention_3() is None
 
 
 if __name__ == "__main__":

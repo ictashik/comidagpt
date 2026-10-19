@@ -1,0 +1,6 @@
+# Machine topology (CLAUDE.md §8.3). Fill in host/user/work_dir; do not commit secrets.
+machines:
+  catnode05: {role: mini-dev, runtime: cpu/mps, host: localhost}
+  catalina:  {role: trainer,  runtime: cuda}   # L40S 46GB
+  spark:     {role: teacher,  runtime: cuda}   # GB10
+  athena:    {role: eval-sft, runtime: cuda}   # RTX 4080 16GB

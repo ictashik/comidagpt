@@ -6,7 +6,7 @@ Maintained by the coding agent per `CLAUDE.md §15`. Newest entries first within
 
 | M | Status | Gate | Result |
 |---|---|---|---|
-| M0 | in progress | G0 | mini-05: env + upstream tests done (43 pass, 14 skip, 1 fail); throughput, runcpu, spark SDPA, upstream PR pending |
+| M0 | in progress | G0 | throughput + d12/60-it smoke measured on catalina, athena, spark (`docs/compute.md`); envs built on all 7 machines; **open: `runs/runcpu.sh` on a Mini, upstream PR (deferred by Ashikh), `docs/cluster.md` done** |
 | M1 | not started | G1 | — |
 | M2 | not started | G2 | — |
 | M3 | not started | G3 | — |
@@ -19,9 +19,14 @@ Maintained by the coding agent per `CLAUDE.md §15`. Newest entries first within
 | run_id | machine | git sha | config | data sha | start | end | result |
 |---|---|---|---|---|---|---|---|
 | g0-d12-catalina | catalina (L40S) | 154fde5 | d12, 60 it, dbs 32, `--run=dummy` | climbmix shards 0-7, tokenizer trained on 2B chars (no manifest yet) | 2026-10-19 | 2026-10-19 | log `~/comidagpt/logs/g0_d12_dbs32.log` on catalina; ~145k tok/s, 2.96 min |
+| g0-d12-spark | spark (GB10) | 154fde5 | d12, 60 it, dbs 32, `--eval-tokens=524288`, torch cu130 + ptxas env, `--run=dummy` | same | 2026-10-19 | 2026-10-19 | `~/comidagpt/logs/g0_d12_dbs32.log`; ~23.9k tok/s, 17.94 min |
 | g0-d12-athena | athena (RTX 4080) | 154fde5 | d12, 60 it, dbs 8 (16 OOM), `--run=dummy` | same | 2026-10-19 | 2026-10-19 | `~/comidagpt/logs/g0_d12_dbs8.log`; ~92.7k tok/s, 4.62 min |
 
 ## Decisions
+
+- 2026-10-19 — **spark needs torch cu130**, not the pinned cu128: bf16 matmul 11 -> 62 TFLOPS. The cu128 pin in `pyproject.toml` stays (right for catalina/athena); spark gets an overlay documented in `docs/cluster.md`. `TRITON_PTXAS_PATH` still required with cu130 (bundled ptxas rejects sm_121a during training-graph compile; only the tests passed without it).
+- 2026-10-19 — The FA3 arch-guard fix is on branch `upstream-fixes` (b298224) and cherry-picked to master; **no upstream PR will be opened for now** (Ashikh, 2026-10-19). Logged in `docs/upstream-diff.md`.
+- 2026-10-19 — Smoke-test deviation from CLAUDE.md §8.2: spark run used `--eval-tokens=524288` because the default validation passes dominate at 24k tok/s. Throughput numbers are unaffected.
 
 - 2026-10-19 — **spark blocker 1 (upstream bug):** `nanochat/flash_attention.py` only special-cases `major == 9`; any other arch (here sm_121, major 12) asks the Hub for `kernels-community/flash-attn3`, `has_kernel` says yes, but the image has no sm_121 code, so the first attention call hard-aborts (`no kernel image is available`) instead of falling back to SDPA. `tests/test_attention_fallback.py` dies silently on spark. Proposed fix: only try FA3 when `major in (8, 9)` (matches the file's own comment). Not applied; candidate for the G0 upstream PR (stronger than the darwin test-skip).
 - 2026-10-19 — **spark blocker 2:** Inductor/Triton fails with the bundled ptxas on sm_121 (`NoTritonConfigsError`, 4 `test_optim` failures). Workaround verified: `TRITON_PTXAS_PATH=/usr/local/cuda-13/bin/ptxas` (system CUDA 13.0 present) -> `test_optim` 4/4 pass. Untested: a full `torch.compile`d training step.
@@ -41,7 +46,7 @@ Maintained by the coding agent per `CLAUDE.md §15`. Newest entries first within
 
 | # | Assumption | Where | Status |
 |---|---|---|---|
-| A1 | PyTorch CUDA aarch64 wheels + nanochat SDPA fallback work on spark (GB10) | §8.1 | **partly verified 2026-10-19**: torch 2.9.1+cu128 sees GB10 (cc 12.1, outside torch's official 8.0-12.0), bf16 matmul OK, SDPA fwd/bwd OK when forced. Two blockers found, see Decisions |
+| A1 | PyTorch CUDA aarch64 wheels + nanochat SDPA fallback work on spark (GB10) | §8.1 | **verified 2026-10-19** with three fixes: FA3 arch guard (in repo), cu130 torch overlay, `TRITON_PTXAS_PATH`. d12 smoke ran at ~23.9k tok/s. See `docs/cluster.md` |
 | A2 | BM25 over names+aliases gives recall@10 ≥ 0.95 for `search` | §5.1 | open |
 | A3 | IFCT 14-group names match ODT's | §5.1 | open |
 | A4 | IFCT 2017 is redistributable in verbalised form | §6.1 | open |

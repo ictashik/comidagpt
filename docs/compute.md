@@ -16,4 +16,18 @@ token count from `base_train` at run time. A final checkpoint was written to `~/
 
 Notes (athena, 2026-10-19): batch 16 OOM'd (16 GB card); 8 is the largest power of two that fits. 60 steps took 4.62 min, val bpb 1.646 after 60 steps
 (untrained, not a result). Host idle (load ~0.2). Driver 595.99.02 after the owner's reload.
+| spark | GB10 121GB unified | 12 | 32 | ~23.9k (median of last 40 steps, steady) | n/a (no peak-flops entry) | 28.8 GB | 154fde5 | 2026-10-19 |
+
+Notes (spark, 2026-10-19): needs torch 2.9.1+**cu130** (cu128 gives 11 TFLOPS bf16 matmul, cu130 gives 62), `TRITON_PTXAS_PATH=/usr/local/cuda-13/bin/ptxas`,
+and the FA3 arch guard (SDPA path used). Run with `--eval-tokens=524288`: the default step-0 + final validation passes (21M tokens each) take longer
+than the 60 training steps at this speed. 60 steps took 17.94 min; val bpb 1.627 after 60 steps (untrained, not a result). Host idle, nothing else on the GPU.
+Planning figure: d12 at ~1.6B tokens would take ~18.6 h here (vs ~3.1 h on catalina): spark is for teacher traces and low-priority runs, not for d12+ pretraining.
+
+## G0 throughput summary (d12, 60 it, 2026-10-19)
+
+| machine | dbs | tok/s | vs catalina |
+|---|---|---|---|
+| catalina (L40S) | 32 | ~145k | 1.00x |
+| athena (RTX 4080) | 8 | ~92.7k | 0.64x |
+| spark (GB10) | 32 | ~23.9k | 0.16x |
 

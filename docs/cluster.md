@@ -36,8 +36,16 @@ All machines are shared personal machines with other users' work on them (load 1
   Python without root, so try `uv sync --extra gpu` there first. Pre-existing Ollama models and a production Ollama belong to others.
 - **athena:** NVIDIA driver was broken until `dkms` was installed (fixed by its owner). First CUDA call after a driver
   or service restart can take ~40 s (kernel JIT); do not treat a slow first step as a failure.
-- **spark:** PyTorch aarch64 CUDA wheels are unverified (Assumption A1). MLX does not exist on this arch. The existing
+- **spark (GB10, sm_121):** verified 2026-10-19. Needs three things, none of which `uv sync --extra gpu` gives you:
+  1. **torch cu130, not cu128.** The pinned `torch==2.9.1+cu128` has no native sm_121 kernels: bf16 matmul 11 TFLOPS vs 62 TFLOPS with cu130.
+     After `uv sync --extra gpu --group dev`, overlay: `uv pip install --python .venv/bin/python --reinstall-package torch torch==2.9.1 --index-url https://download.pytorch.org/whl/cu130`.
+     A later `uv sync` reverts it; redo the overlay.
+  2. **`export TRITON_PTXAS_PATH=/usr/local/cuda-13/bin/ptxas`** (system CUDA 13.0, already installed). Triton's bundled ptxas rejects `sm_121a` during `torch.compile` of the training graph.
+  3. **The FA3 arch guard** in `nanochat/flash_attention.py` (see `docs/upstream-diff.md`); without it the first attention call aborts the process.
+  Also: `nvidia-smi` utilization on this chip is unreliable (showed 96% with nothing running); judge busy-ness by `--query-compute-apps` and `ps`.
+  Unified memory shows `[N/A]` for per-GPU used memory. The existing `gpt-oss:120b` sits in a shared Ollama instance: using it for teacher traces needs the owner's OK (see PROGRESS.md open questions).
   `gpt-oss:120b` sits in a shared Ollama instance: using it for teacher traces needs the owner's OK (see PROGRESS.md open questions).
-- **Minis:** system `python3` may be 3.9; `uv` manages the interpreter so this should not matter. Install `uv` per machine.
+- **Minis:** system `python3` may be 3.9; `uv` manages the interpreter so this should not matter. Install `uv` per machine. If `uv` cannot download its interpreter (mini-03 timed out twice), rsync `~/.local/share/uv/python/cpython-3.10.*` from another Mini.
+- **Gotchas:** `pkill -f <pattern>` over SSH matches the SSH command's own shell and kills the session; kill by PID. In zsh, write `"${h}:path"`, never `$h:path` (`:p` is a modifier). macOS `rsync` is openrsync; check with `ls` on the far side. A `base_train` run does a full validation pass at step 0; on slow GPUs pass `--eval-tokens=524288` or it looks hung.
 - Shared machines show load from others: a slow worker is not a broken one, and a throughput number measured under load
   is a lower bound; record `uptime` next to every `docs/compute.md` row.

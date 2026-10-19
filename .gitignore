@@ -19,3 +19,6 @@ data/tables/
 
 # comida: CLAUDE.md is the project charter and is tracked (upstream ignores it)
 wandb/
+
+# run logs (provenance goes in PROGRESS.md)
+logs/
